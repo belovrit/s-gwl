@@ -1,0 +1,10 @@
+.DS_Store
+data/aids_toy1.edgelist
+data/aids_toy2.edgelist
+data/aids_toy3.edgelist
+data/aids_toy4.edgelist
+data/database.p
+data/database_10.p
+data/database_old.p
+methods/__pycache__/
+results/

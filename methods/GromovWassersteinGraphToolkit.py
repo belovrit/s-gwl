@@ -58,6 +58,8 @@ def node_pair_assignment(trans: np.ndarray, p_s: np.ndarray, p_t: np.ndarray,
     pairs_idx = []
     pairs_name = []
     pairs_confidence = []
+    # print(trans.shape, '@@@@@@@@@')
+    # print(trans)
     if trans.shape[0] >= trans.shape[1]:
         source_idx = list(range(trans.shape[0]))
         for t in range(trans.shape[1]):
@@ -464,7 +466,7 @@ def recursive_multi_graph_partition(costs: Dict, probs: Dict, idx2nodes: Dict,
 
 
 def direct_graph_matching(cost_s: csr_matrix, cost_t: csr_matrix, p_s: np.ndarray, p_t: np.ndarray,
-                          idx2node_s: Dict, idx2node_t: Dict, ot_hyperpara: Dict) -> Tuple[List, List, List]:
+                          idx2node_s: Dict, idx2node_t: Dict, ot_hyperpara: Dict) -> Tuple[List, List, List, np.ndarray]:
     """
     Matching two graphs directly via calculate their Gromov-Wasserstein discrepancy.
     Args:
@@ -483,7 +485,7 @@ def direct_graph_matching(cost_s: csr_matrix, cost_t: csr_matrix, p_s: np.ndarra
     """
     trans, d_gw, p_s = Gwl.gromov_wasserstein_discrepancy(cost_s, cost_t, p_s, p_t, ot_hyperpara)
     pairs_idx, pairs_name, pairs_confidence = node_pair_assignment(trans, p_s, p_t, idx2node_s, idx2node_t)
-    return pairs_idx, pairs_name, pairs_confidence
+    return pairs_idx, pairs_name, pairs_confidence, trans
 
 
 def indrect_graph_matching(costs: Dict, probs: Dict, p_t: np.ndarray,
@@ -517,7 +519,7 @@ def recursive_direct_graph_matching(cost_s: csr_matrix, cost_t: csr_matrix,
                                     idx2node_s: Dict, idx2node_t: Dict,
                                     ot_hyperpara: Dict, weights: Dict = None, predefine_barycenter: bool = False,
                                     cluster_num: int = 2, partition_level: int = 3,
-                                    max_node_num: int = 200) -> Tuple[List, List, List]:
+                                    max_node_num: int = 200) -> Tuple[List, List, List, np.ndarray]:
     """
     recursive direct graph matching combining graph partition and indirect graph matching.
     1) apply "multi-graph partition" recursively to get a list of sub-graph sets
@@ -556,11 +558,14 @@ def recursive_direct_graph_matching(cost_s: csr_matrix, cost_t: csr_matrix,
     # set_idx = []
     set_name = []
     set_confidence = []
+
+    assert len(costs_all) == 1, 'need to put together different trans matrices!'
     for i in range(len(costs_all)):
         # print('Matching: sub-graph pair {}/{}, #source node={}, #target node={}'.format(
         #     i+1, len(costs_all), len(idx2nodes_all[i][0]), len(idx2nodes_all[i][1])))
         ot_hyperpara['outer_iteration'] = max([len(idx2nodes_all[i][0]), len(idx2nodes_all[i][1])])
-        subset_idx, subset_name, subset_confidence = direct_graph_matching(costs_all[i][0], costs_all[i][1],
+        # TODO: may be wrong! need to put together different trans matrices
+        subset_idx, subset_name, subset_confidence, trans = direct_graph_matching(costs_all[i][0], costs_all[i][1],
                                                                            probs_all[i][0], probs_all[i][1],
                                                                            idx2nodes_all[i][0], idx2nodes_all[i][1],
                                                                            ot_hyperpara)
@@ -582,7 +587,7 @@ def recursive_direct_graph_matching(cost_s: csr_matrix, cost_t: csr_matrix,
         idx_t = node2idx_t[pair[1]]
         set_idx.append([idx_s, idx_t])
 
-    return set_idx, set_name, set_confidence
+    return set_idx, set_name, set_confidence, trans
 
 
 def recursive_indirect_graph_matching(costs: Dict, probs: Dict, idx2nodes: Dict, ot_hyperpara: Dict,

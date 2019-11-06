@@ -1,39 +1,11 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import scipy as sp
-import os.path
-import networkx as nx
-import pickle
+"""
+Data preparation for PPI dataset
 
-G1 = nx.read_edgelist("/Users/alexwang/Documents/UCLA 2019 Fall/Wasserstein Research/GraphMatching/model/s-gwl/data/aids_toy1.edgelist")
-G2 = nx.read_edgelist("/Users/alexwang/Documents/UCLA 2019 Fall/Wasserstein Research/GraphMatching/model/s-gwl/data/aids_toy2.edgelist")
-
-data = {}
-
-# degree1 =
-probs1 = [x[1] for x in G1.degree]
-probs1 = np.array(probs1 / np.sum(probs1)).reshape((len(probs1), 1))
-
-# degree2 =
-probs2 = [x[1] for x in G2.degree]
-probs2 = np.array(probs2 / np.sum(probs2)).reshape((len(probs2), 1))
-probs = [probs1, probs2]
-
-
-adj1 = nx.adjacency_matrix(G1)
-adj2 = nx.adjacency_matrix(G2)
-
-
-data['costs'] = [adj1, adj2]
-
-data['probs'] = probs
-
-
-idx2nodes1 = dict(zip(range(len(G1.nodes)), sorted(G1.nodes)))
-idx2nodes2 = dict(zip(range(len(G2.nodes)), sorted(G2.nodes)))
-idx2nodes = [idx2nodes1, idx2nodes2]
-data['idx2nodes'] = idx2nodes
-
+database = {'costs': a list of adjacency matrices of different graphs,
+            'probs': a list of distributions of nodes in different graphs,
+            'idx2nodes': a list of dictionaries mapping index to node name,
+            'correspondence': None or a list of correspondence set}
+"""
 
 import methods.EvaluationMeasure as Eval
 import methods.GromovWassersteinGraphToolkit as GwGt
@@ -44,7 +16,12 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-database = data
+
+# with open('data/PPI_syn_database.pkl', 'rb') as f:
+#     database = pickle.load(f)
+
+with open('data/database.p', 'rb') as f:
+    database = pickle.load(f)
 
 num_iter = 2000
 ot_dict = {'loss_type': 'L2',  # the key hyperparameters of GW distance
@@ -70,6 +47,16 @@ for i in range(1):
     idx2node_s = database['idx2nodes'][0]
     idx2node_t = database['idx2nodes'][i+1]
     num_nodes = min([len(idx2node_s), len(idx2node_t)])
+
+    # time_s = time.time()
+    # ot_dict['outer_iteration'] = num_iter
+    # pairs_idx, pairs_name, pairs_confidence = GwGt.direct_graph_matching(
+    #     0.5 * (cost_s + cost_s.T), 0.5 * (cost_t + cost_t.T), p_s, p_t, idx2node_s, idx2node_t, ot_dict)
+    # runtime = time.time() - time_s
+    # nc = Eval.calculate_node_correctness(pairs_name, num_correspondence=num_nodes)
+    # print('method: gwl, duration {:.4f}s, nc {:.4f}.'.format(runtime, nc))
+    # with open('results/gwl_ppi_syn_{}.pkl'.format(i + 1), 'wb') as f:
+    #     pickle.dump([nc, runtime], f)
 
     time_s = time.time()
     ot_dict['outer_iteration'] = num_iter
